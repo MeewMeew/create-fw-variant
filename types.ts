@@ -1,11 +1,6 @@
-import type { PackageManager } from "../helpers/get-pkg-manager";
+import type { PackageManager } from "./helpers/get-pkg-manager";
 
 export type TemplateType = "15-shadcn"
-
-export interface GetTemplateFileArgs {
-  template: TemplateType;
-  file: string;
-}
 
 export interface InstallTemplateArgs {
   appName: string;
@@ -21,3 +16,6 @@ export interface Template {
   value: TemplateType;
 }
 
+export type InstallTemplate = (args: InstallTemplateArgs) => Promise<{
+  hasPackageJson: boolean
+}>

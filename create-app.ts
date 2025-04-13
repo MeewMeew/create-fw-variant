@@ -1,17 +1,15 @@
 /* eslint-disable import/no-extraneous-dependencies */
 
 import { basename, dirname, join, resolve } from 'node:path'
-import { copyFileSync, existsSync, mkdirSync } from 'node:fs'
-import { cyan, green, red } from 'picocolors'
-import { getTemplateFile, installTemplate } from './templates'
+import { cyan, green } from 'picocolors'
 
 import type { PackageManager } from './helpers/get-pkg-manager'
-import type { TemplateType } from './templates'
+import type { TemplateType } from './template'
 import { getOnline } from './helpers/is-online'
-import { install } from './helpers/install'
+import { installTemplate } from './template'
 import { isFolderEmpty } from './helpers/is-folder-empty'
 import { isWriteable } from './helpers/is-writeable'
-import retry from 'async-retry'
+import { mkdirSync } from 'node:fs'
 import { tryGitInit } from './helpers/git'
 
 export class DownloadError extends Error { }
@@ -20,15 +18,16 @@ export async function createApp({
   appPath,
   packageManager,
   skipInstall,
-  disableGit,
+  enableGit,
   template,
 }: {
   appPath: string
   packageManager: PackageManager
   skipInstall: boolean
-  disableGit?: boolean,
+  enableGit?: boolean,
   template: TemplateType
 }): Promise<void> {
+
   const root = resolve(appPath)
 
   if (!(await isWriteable(dirname(root)))) {
@@ -57,8 +56,6 @@ export async function createApp({
 
   process.chdir(root)
 
-  let hasPackageJson = false
-
   await installTemplate({
     appName,
     root,
@@ -68,11 +65,11 @@ export async function createApp({
     skipInstall,
   })
 
-  if (disableGit) {
-    console.log('Skipping git initialization.')
-    console.log()
-  } else if (tryGitInit(root)) {
+  if (enableGit && tryGitInit(root)) {
     console.log('Initialized a git repository.')
+    console.log()
+  } else {
+    console.log('Skipping git initialization.')
     console.log()
   }
 
@@ -84,23 +81,21 @@ export async function createApp({
   }
 
   console.log(green('Success!'))
-
-  if (hasPackageJson) {
-    console.log('Inside that directory, you can run several commands:')
-    console.log()
-    console.log(cyan(`  ${packageManager} ${useYarn ? '' : 'run '}dev`))
-    console.log('    Starts the development server.')
-    console.log()
-    console.log(cyan(`  ${packageManager} ${useYarn ? '' : 'run '}build`))
-    console.log('    Builds the app for production.')
-    console.log()
-    console.log(cyan(`  ${packageManager} start`))
-    console.log('    Runs the built app in production mode.')
-    console.log()
-    console.log('We suggest that you begin by typing:')
-    console.log()
-    console.log(cyan('  cd'), cdpath)
-    console.log(`  ${cyan(`${packageManager} ${useYarn ? '' : 'run '}dev`)}`)
-  }
+  console.log()
+  console.log('Inside that directory, you can run several commands:')
+  console.log()
+  console.log(cyan(`  ${packageManager} ${useYarn ? '' : 'run '}dev`))
+  console.log('    Starts the development server.')
+  console.log()
+  console.log(cyan(`  ${packageManager} ${useYarn ? '' : 'run '}build`))
+  console.log('    Builds the app for production.')
+  console.log()
+  console.log(cyan(`  ${packageManager} start`))
+  console.log('    Runs the built app in production mode.')
+  console.log()
+  console.log('We suggest that you begin by typing:')
+  console.log()
+  console.log(cyan('  cd'), cdpath)
+  console.log(`  ${cyan(`${packageManager} ${useYarn ? '' : 'run '}dev`)}`)
   console.log()
 }

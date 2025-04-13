@@ -2,11 +2,10 @@
 /* eslint-disable import/no-extraneous-dependencies */
 
 import { DownloadError, createApp } from './create-app'
-import { TemplateType, templates } from './templates'
+import { TemplateType, templates } from './template'
 import { basename, resolve } from 'node:path'
-import { bold, cyan, green, red, yellow } from 'picocolors'
+import { bold, cyan, red, yellow } from 'picocolors'
 
-import { Command } from 'commander'
 import Conf from 'conf'
 import type { InitialReturnValue } from 'prompts'
 import type { PackageManager } from './helpers/get-pkg-manager'
@@ -22,6 +21,7 @@ let projectPath: string = ''
 
 const handleSigTerm = () => process.exit(0)
 const conf = new Conf({ projectName: 'create-n15' })
+let packageManager = getPkgManager()
 
 process.on('SIGINT', handleSigTerm)
 process.on('SIGTERM', handleSigTerm)
@@ -39,59 +39,6 @@ const onPromptState = (state: {
     process.exit(1)
   }
 }
-
-const program = new Command(packageJson.name)
-  .version(
-    packageJson.version,
-    '-v, --version',
-    'Output the current version of create-n15.'
-  )
-  .argument('[directory]')
-  .usage('[directory] [options]')
-  .helpOption('-h, --help', 'Display this help message.')
-  .option(
-    '--use-npm',
-    'Explicitly tell the CLI to bootstrap the application using npm.'
-  )
-  .option(
-    '--use-pnpm',
-    'Explicitly tell the CLI to bootstrap the application using pnpm.'
-  )
-  .option(
-    '--use-yarn',
-    'Explicitly tell the CLI to bootstrap the application using Yarn.'
-  )
-  .option(
-    '--use-bun',
-    'Explicitly tell the CLI to bootstrap the application using Bun.'
-  )
-  .option(
-    '--skip-install',
-    'Explicitly tell the CLI to skip installing packages.'
-  )
-  .option('--disable-git', `Skip initializing a git repository.`)
-  .action((name) => {
-    // Commander does not implicitly support negated options. When they are used
-    // by the user they will be interpreted as the positional argument (name) in
-    // the action handler. See https://github.com/tj/commander.js/pull/1355
-    if (name && !name.startsWith('--no-')) {
-      projectPath = name
-    }
-  })
-  .allowUnknownOption()
-  .parse(process.argv)
-
-const opts = program.opts()
-
-const packageManager: PackageManager = !!opts.useNpm
-  ? 'npm'
-  : !!opts.usePnpm
-    ? 'pnpm'
-    : !!opts.useYarn
-      ? 'yarn'
-      : !!opts.useBun
-        ? 'bun'
-        : getPkgManager()
 
 async function run(): Promise<void> {
 
@@ -118,17 +65,6 @@ async function run(): Promise<void> {
     if (typeof res.path === 'string') {
       projectPath = res.path.trim()
     }
-  }
-
-  if (!projectPath) {
-    console.log(
-      '\nPlease specify the project directory:\n' +
-      `  ${cyan(opts.name())} ${green('<project-directory>')}\n` +
-      'For example:\n' +
-      `  ${cyan(opts.name())} ${green('my-next-app')}\n\n` +
-      `Run ${cyan(`${opts.name()} --help`)} to see all options.`
-    )
-    process.exit(1)
   }
 
   const appPath = resolve(projectPath)
@@ -161,76 +97,65 @@ async function run(): Promise<void> {
       initial: 0,
     })
 
-    if (res.template) {
-      conf.set('template', res.template)
-    }
+    conf.set('template', res.template)
   }
 
   {
+    const pkgManagers = [
+      { title: "npm", value: "npm" },
+      { title: "pnpm", value: "pnpm" },
+      { title: "yarn", value: "yarn" },
+      { title: "bun", value: "bun" },
+    ]
+
     const res = await prompts({
       type: "select",
       name: "packageManager",
       message: "Select a package manager:",
-      choices: [
-        { title: "npm", value: "npm" },
-        { title: "pnpm", value: "pnpm" },
-        { title: "yarn", value: "yarn" },
-        { title: "bun", value: "bun" },
-      ],
-      initial: 0,
+      choices: pkgManagers,
+      initial: pkgManagers.findIndex(pkg => pkg.value === packageManager),
     })
 
-    if (res.packageManager) {
-      conf.set('packageManager', res.packageManager)
-    }
+    conf.set('packageManager', res.packageManager)
   }
 
   {
     const res = await prompts({
       type: "confirm",
-      name: "disableGit",
+      name: "enableGit",
       message: "Initialize a git repository?",
       initial: true,
     })
 
-    if (res.disableGit) {
-      conf.set('disableGit', !res.disableGit)
-    }
+    conf.set('enableGit', res.enableGit)
   }
 
   {
     const res = await prompts({
       type: "confirm",
       name: "skipInstall",
-      message: "Install dependencies?",
-      initial: true,
+      message: "Skip installing dependencies?",
+      initial: false,
     })
 
-    if (res.skipInstall) {
-      conf.set('skipInstall', !res.skipInstall)
-    }
+    conf.set('skipInstall', res.skipInstall)
+  }
+
+  const createAppArgs = {
+    appPath,
+    packageManager: conf.get('packageManager') as PackageManager,
+    skipInstall: conf.get('skipInstall') as boolean,
+    enableGit: conf.get('enableGit') as boolean,
+    template: conf.get('template') as TemplateType,
   }
 
   try {
-    await createApp({
-      appPath,
-      packageManager: conf.get('packageManager') as PackageManager,
-      skipInstall: conf.get('skipInstall') as boolean || false,
-      disableGit: conf.get('disableGit') as boolean || false,
-      template: conf.get('template') as TemplateType || '15-shadcn',
-    })
+    await createApp(createAppArgs)
   } catch (reason) {
     if (!(reason instanceof DownloadError)) {
       throw reason
     }
-
-    await createApp({
-      appPath,
-      packageManager: conf.get('packageManager') as PackageManager,
-      skipInstall: conf.get('skipInstall') as boolean || false,
-      disableGit: conf.get('disableGit') as boolean || false,
-      template: conf.get('template') as TemplateType || '15-shadcn',
-    })
+    await createApp(createAppArgs)
   }
 }
 
@@ -245,14 +170,23 @@ async function notifyUpdate(): Promise<void> {
         pnpm: 'pnpm add -g',
         bun: 'bun add -g',
       }
-      const updateMessage = `${global[conf.get('packageManager') as PackageManager]} create-n15`
+      const updateMessage = `${global[conf.get('packageManager') as PackageManager]} create-n15-variant`
       console.log(
-        yellow(bold('A new version of `create-n15` is available!')) +
-        '\n' +
-        'You can update by running: ' +
-        cyan(updateMessage) +
-        '\n'
+        yellow(bold('A new version of `create-n15-variant` is available!')) + '\n'
+        // 'You can update by running: ' +
+        // cyan(updateMessage) +
+        // '\n'
       )
+      const res = await prompts({
+        type: "confirm",
+        name: "updatePackage",
+        message: "Would you like to update now?",
+        initial: true
+      })
+
+      if (res.updatePackage) {
+
+      }
     }
     process.exit(0)
   } catch {
