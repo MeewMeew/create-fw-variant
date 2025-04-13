@@ -1,4 +1,4 @@
-import type { InstallTemplateArgs, Template } from "./types";
+import type { FrameworkTemplate, InstallTemplateArgs, Template } from "./types";
 import { bold, cyan } from "picocolors";
 
 import { copy } from "./helpers/copy";
@@ -80,11 +80,14 @@ export const installTemplate = async ({
   return true
 };
 
-export const templates: Template[] = [
-  {
-    title: "Next.js 15 + Shadcn/UI",
-    value: "15-shadcn",
-  }
-]
+export const templates: FrameworkTemplate = {
+  next: [
+    {
+      title: "Next.js 15 + Shadcn/UI",
+      value: "next-15-shadcn",
+    }
+  ],
+  vue: []
+}
 
 export * from "./types";

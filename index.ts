@@ -2,7 +2,7 @@
 /* eslint-disable import/no-extraneous-dependencies */
 
 import { DownloadError, createApp } from './create-app'
-import { TemplateType, templates } from './template'
+import { Framework, TemplateType, templates } from './template'
 import { basename, resolve } from 'node:path'
 import { bold, cyan, red, yellow } from 'picocolors'
 
@@ -11,6 +11,7 @@ import type { InitialReturnValue } from 'prompts'
 import type { PackageManager } from './helpers/get-pkg-manager'
 import { existsSync } from 'node:fs'
 import { getPkgManager } from './helpers/get-pkg-manager'
+import { install } from './helpers/install'
 import { isFolderEmpty } from './helpers/is-folder-empty'
 import packageJson from './package.json'
 import prompts from 'prompts'
@@ -20,7 +21,7 @@ import { validateNpmName } from './helpers/validate-pkg'
 let projectPath: string = ''
 
 const handleSigTerm = () => process.exit(0)
-const conf = new Conf({ projectName: 'create-n15' })
+const conf = new Conf({ projectName: 'create-next' })
 let packageManager = getPkgManager()
 
 process.on('SIGINT', handleSigTerm)
@@ -91,9 +92,30 @@ async function run(): Promise<void> {
   {
     const res = await prompts({
       type: "select",
+      name: "framework",
+      message: "Select a framework:",
+      choices: [
+        { title: "Next.js", value: "next" },
+        { title: "Vue.js", value: "vue" }
+      ],
+      initial: 0
+    })
+    conf.set('framework', res.framework)
+  }
+
+  {
+    const choices = templates[conf.get('framework') as Framework]
+    if (choices.length === 0) {
+      console.log(yellow("Oops! No template for this framework yet. Stay tuned for future updates!"))
+      console.log(yellow("Please try again with a different framework."))
+      return
+    }
+
+    const res = await prompts({
+      type: "select",
       name: "template",
       message: "Select a template:",
-      choices: templates,
+      choices: choices,
       initial: 0,
     })
 
@@ -165,17 +187,13 @@ async function notifyUpdate(): Promise<void> {
   try {
     if ((await update)?.latest) {
       const global = {
-        npm: 'npm i -g',
-        yarn: 'yarn global add',
-        pnpm: 'pnpm add -g',
-        bun: 'bun add -g',
+        npm: ['i', '-g'],
+        yarn: ['global', 'add'],
+        pnpm: ['add', '-g'],
+        bun: ['add', '-g'],
       }
-      const updateMessage = `${global[conf.get('packageManager') as PackageManager]} create-n15-variant`
       console.log(
-        yellow(bold('A new version of `create-n15-variant` is available!')) + '\n'
-        // 'You can update by running: ' +
-        // cyan(updateMessage) +
-        // '\n'
+        yellow(bold('A new version of `create-fw-variant` is available!')) + '\n'
       )
       const res = await prompts({
         type: "confirm",
@@ -185,7 +203,8 @@ async function notifyUpdate(): Promise<void> {
       })
 
       if (res.updatePackage) {
-
+        const args = [...global[conf.get('packageManager') as keyof typeof global], 'create-fw-variant@latest']
+        await install(conf.get('packageManager') as PackageManager, true, args)
       }
     }
     process.exit(0)

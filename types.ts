@@ -1,6 +1,6 @@
 import type { PackageManager } from "./helpers/get-pkg-manager";
 
-export type TemplateType = "15-shadcn"
+export type TemplateType = "next-15-shadcn"
 
 export interface InstallTemplateArgs {
   appName: string;
@@ -19,3 +19,7 @@ export interface Template {
 export type InstallTemplate = (args: InstallTemplateArgs) => Promise<{
   hasPackageJson: boolean
 }>
+
+export type Framework = 'next' | 'vue'
+
+export type FrameworkTemplate = Record<Framework, Template[]>

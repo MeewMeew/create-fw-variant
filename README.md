@@ -1,17 +1,18 @@
-# Create Next App
+# 🚀 Create App with Framework Variants
+The easiest way to get started with your favorite web framework is by using create-fw-variant.
+This CLI tool lets you scaffold a new application with everything set up for you — using prebuilt templates for frameworks like Next.js, Nuxt, SvelteKit, and more.
 
-The easiest way to get started with Next.js is by using `create-n15-variant`. This CLI tool enables you to quickly start building a new Next.js application, with everything set up for you. To get started, use the following command:
+To get started, use the following command:
 
-### Interactive
-
+## Interactive
 You can create a new project interactively by running:
 
 ```bash
-npx create-n15-variant@latest
+npx create-fw-variant@latest
 # or
-yarn create n15-variant
+yarn create fw-variant
 # or
-pnpm create n15-variant
+pnpm create fw-variant
 # or
-bunx create-n15-variant
+bunx create-fw-variant
 ```

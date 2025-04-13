@@ -1,15 +1,15 @@
 {
-  "name": "create-n15-variant",
-  "version": "1.0.1",
-  "description": "Create Next.js-powered React customized apps with one command",
+  "name": "create-fw-variant",
+  "version": "1.0.0",
+  "description": "Create fully customizable apps using prebuilt templates across modern frameworks — with one command.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/meewmeew/create-n15-variant"
+    "url": "https://github.com/meewmeew/create-fw-variant"
   },
   "author": "Nguyen Mau Minh <support@mewis.me>",
   "license": "MIT",
   "bin": {
-    "create-n15-variant": "./dist/index.js"
+    "create-fw-variant": "./dist/index.js"
   },
   "files": [
     "./dist"
@@ -26,7 +26,6 @@
     "@types/cross-spawn": "^6.0.6",
     "@types/prompts": "^2.4.9",
     "@types/validate-npm-package-name": "^4.0.2",
-    "commander": "^13.1.0",
     "conf": "^13.1.0",
     "cross-spawn": "^7.0.6",
     "fast-glob": "^3.3.3",
